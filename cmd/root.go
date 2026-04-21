@@ -49,11 +49,7 @@ func Execute() int {
 	return 0
 }
 
-// placeholder stubs for command constructors defined in sibling files.
-func newDoctorCmd() *cobra.Command {
-	return &cobra.Command{Use: "doctor", RunE: func(*cobra.Command, []string) error { return nil }}
-}
-
+// placeholder stub for +search; replaced in Task 8.
 func newSearchCmd() *cobra.Command {
 	return &cobra.Command{Use: "+search", Short: "regex/level search", RunE: func(*cobra.Command, []string) error { return nil }}
 }
