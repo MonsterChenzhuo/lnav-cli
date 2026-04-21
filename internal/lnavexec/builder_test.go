@@ -2,6 +2,7 @@ package lnavexec
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -58,4 +59,14 @@ func TestBuildSQLArgs_RejectsNewline(t *testing.T) {
 		}
 	}()
 	_ = BuildSQLArgs(SQLOpts{Query: "SELECT\n1", Files: []string{"/tmp/a.log"}})
+}
+
+func TestBuildSummaryQueries_Shape(t *testing.T) {
+	qs := BuildSummaryQueries(10, "1m")
+	if len(qs) != 3 {
+		t.Fatalf("expected 3 queries, got %d", len(qs))
+	}
+	if !strings.Contains(qs[0], "log_level") || !strings.Contains(qs[1], "LIMIT 10") || !strings.Contains(qs[2], "strftime") {
+		t.Fatalf("unexpected queries: %+v", qs)
+	}
 }

@@ -1,7 +1,10 @@
 // Package lnavexec builds and executes lnav subprocess invocations.
 package lnavexec
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 type SearchOpts struct {
 	Pattern string // regex passed to :filter-in; empty means no filter
@@ -49,6 +52,26 @@ func BuildSQLArgs(o SQLOpts) []string {
 	args := []string{"-n", "-q", o.Query, "--"}
 	args = append(args, o.Files...)
 	return args
+}
+
+// BuildSummaryQueries returns the three SQL queries used by +summary:
+// level distribution, top-N error bodies, and a time histogram.
+func BuildSummaryQueries(topN int, histogramBucket string) []string {
+	if topN <= 0 {
+		topN = 10
+	}
+	if histogramBucket == "" {
+		histogramBucket = "5m"
+	}
+	bucket := "%Y-%m-%d %H:%M"
+	if histogramBucket == "1h" {
+		bucket = "%Y-%m-%d %H:00"
+	}
+	return []string{
+		"SELECT log_level, count(*) AS c FROM all_logs WHERE log_level IN ('error','warning','fatal') GROUP BY log_level ORDER BY c DESC",
+		fmt.Sprintf("SELECT log_level, log_body, count(*) AS c FROM all_logs WHERE log_level IN ('error','warning','fatal') GROUP BY log_body ORDER BY c DESC LIMIT %d", topN),
+		fmt.Sprintf("SELECT strftime('%s', log_time) AS bin, count(*) AS c FROM all_logs WHERE log_level IN ('error','fatal') GROUP BY bin ORDER BY bin", bucket),
+	}
 }
 
 func assertNoNewline(s, field string) {
