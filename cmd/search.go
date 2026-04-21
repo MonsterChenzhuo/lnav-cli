@@ -5,6 +5,7 @@ import (
 
 	"github.com/MonsterChenzhuo/lnav-cli/internal/lnavexec"
 	"github.com/MonsterChenzhuo/lnav-cli/internal/output"
+	"github.com/MonsterChenzhuo/lnav-cli/internal/source"
 	"github.com/MonsterChenzhuo/lnav-cli/internal/timerange"
 )
 
@@ -27,10 +28,21 @@ func newSearchCmd() *cobra.Command {
 				return output.Errorf("missing_source", "at least one --source / -s is required").
 					WithHint("pass a path, glob, or registered alias")
 			}
+			cfg, err := source.Load(configPath())
+			if err != nil {
+				return output.Errorf("load_config", "%v", err)
+			}
+			resolved, err := cfg.Resolve(globalOpts.Sources)
+			if err != nil {
+				return output.Errorf("resolve_source", "%v", err)
+			}
+			if resolved.StdinCmd != "" {
+				return output.Errorf("unsupported_stdin_source", "command-backed source not yet wired into +search (coming in v1.x)")
+			}
 			so := lnavexec.SearchOpts{
 				Pattern: local.pattern,
 				Level:   local.level,
-				Files:   globalOpts.Sources,
+				Files:   resolved.Files,
 			}
 			if globalOpts.Since != "" {
 				ts, err := timerange.Parse(globalOpts.Since)
