@@ -51,7 +51,33 @@ metadata:
 - **禁止**在未加 `--duration` 或 `--max-events` 的情况下调用 `+tail`（v1.0 起提供）。
 - **禁止**把用户原始字符串直接拼进 regex；遇到含特殊字符的字面量，请先用 `regexp.QuoteMeta` 或改走 `--pattern-file`（v1.0）。
 
+## Sources 别名（强烈推荐）
+
+第一次面对一套日志（如 `nginx-prod` 或 `k8s-api`）时，先注册别名：
+
+```bash
+lnav-cli source add nginx-prod --paths "/var/log/nginx/access.log*,/var/log/nginx/error.log"
+lnav-cli source add k8s-api    --command "kubectl logs -n kube-system deploy/kube-apiserver --tail=-1"
+```
+
+之后所有 shortcut 都可直接 `-s nginx-prod`。列表/查看/删除：
+
+```bash
+lnav-cli source ls
+lnav-cli source show nginx-prod
+lnav-cli source rm  nginx-prod
+```
+
+> v1.0 中，`command:` 型别名（通过 shell 命令喂 lnav stdin）暂未在 `+search`/`+sql` 里接入，会返回 `unsupported_stdin_source` 错误；请用 `paths:` 型先行。
+
+## Setup 与 doctor
+
+- `lnav-cli setup` 打印当前平台的 lnav 安装建议命令（不自动安装，由用户确认后执行）。
+- `lnav-cli doctor` 自检 lnav 是否在 PATH。
+
 ## 参考 skill
 
 - [`../lnav-search/SKILL.md`](../lnav-search/SKILL.md) — 搜索/过滤
-- 后续补齐：`lnav-sql` / `lnav-summary` / `lnav-tail`
+- [`../lnav-sql/SKILL.md`](../lnav-sql/SKILL.md) — SQL 分析
+- [`../lnav-summary/SKILL.md`](../lnav-summary/SKILL.md) — 错误摘要
+- [`../lnav-tail/SKILL.md`](../lnav-tail/SKILL.md) — 实时跟随
