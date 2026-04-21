@@ -49,7 +49,3 @@ func Execute() int {
 	return 0
 }
 
-// placeholder stub for +search; replaced in Task 8.
-func newSearchCmd() *cobra.Command {
-	return &cobra.Command{Use: "+search", Short: "regex/level search", RunE: func(*cobra.Command, []string) error { return nil }}
-}
