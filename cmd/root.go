@@ -40,6 +40,7 @@ func NewRootCmd() *cobra.Command {
 	root.AddCommand(newSQLCmd())
 	root.AddCommand(newSummaryCmd())
 	root.AddCommand(newTailCmd())
+	root.AddCommand(newSetupCmd())
 	return root
 }
 
