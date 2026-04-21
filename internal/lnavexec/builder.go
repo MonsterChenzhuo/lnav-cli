@@ -4,9 +4,9 @@ package lnavexec
 import "strings"
 
 type SearchOpts struct {
-	Pattern string   // regex passed to :filter-in; empty means no filter
-	Level   string   // one of info|warning|error|fatal; empty means any
-	SinceTS string   // RFC3339 / lnav-compatible absolute timestamp
+	Pattern string // regex passed to :filter-in; empty means no filter
+	Level   string // one of info|warning|error|fatal; empty means any
+	SinceTS string // RFC3339 / lnav-compatible absolute timestamp
 	UntilTS string
 	Files   []string // positional args passed to lnav
 }
