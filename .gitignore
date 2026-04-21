@@ -1,0 +1,6 @@
+/lnav-cli
+/dist/
+*.test
+*.out
+.idea/
+.vscode/
