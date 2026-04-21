@@ -38,6 +38,19 @@ func BuildSearchArgs(o SearchOpts) []string {
 	return args
 }
 
+type SQLOpts struct {
+	Query string
+	Files []string
+}
+
+// BuildSQLArgs produces argv for `lnav -n -q <query> -- <files...>`.
+func BuildSQLArgs(o SQLOpts) []string {
+	assertNoNewline(o.Query, "query")
+	args := []string{"-n", "-q", o.Query, "--"}
+	args = append(args, o.Files...)
+	return args
+}
+
 func assertNoNewline(s, field string) {
 	if strings.ContainsAny(s, "\r\n") {
 		panic("lnavexec: newline in " + field + " — input validation missing up-stream")

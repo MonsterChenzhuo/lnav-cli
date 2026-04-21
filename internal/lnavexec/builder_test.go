@@ -42,3 +42,20 @@ func TestBuildSearchArgs_RejectsShellInjection(t *testing.T) {
 	}()
 	_ = BuildSearchArgs(SearchOpts{Pattern: "bad\npattern", Files: []string{"/tmp/a.log"}})
 }
+
+func TestBuildSQLArgs(t *testing.T) {
+	got := BuildSQLArgs(SQLOpts{Query: "SELECT 1", Files: []string{"/tmp/a.log"}})
+	want := []string{"-n", "-q", "SELECT 1", "--", "/tmp/a.log"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got=%v want=%v", got, want)
+	}
+}
+
+func TestBuildSQLArgs_RejectsNewline(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic on newline in query")
+		}
+	}()
+	_ = BuildSQLArgs(SQLOpts{Query: "SELECT\n1", Files: []string{"/tmp/a.log"}})
+}

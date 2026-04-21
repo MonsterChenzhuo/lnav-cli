@@ -37,6 +37,7 @@ func NewRootCmd() *cobra.Command {
 	root.AddCommand(newDoctorCmd())
 	root.AddCommand(newSearchCmd())
 	root.AddCommand(newSourceCmd())
+	root.AddCommand(newSQLCmd())
 	return root
 }
 
