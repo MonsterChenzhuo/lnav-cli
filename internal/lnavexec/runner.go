@@ -1,6 +1,8 @@
 package lnavexec
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -43,6 +45,40 @@ func (r Runner) Run(args []string) error {
 	cmd.Stdout = r.Stdout
 	cmd.Stderr = r.Stderr
 	if err := cmd.Run(); err != nil {
+		return output.Errorf("lnav_exec_failed", "%v", err)
+	}
+	return nil
+}
+
+// RunCtx executes with a context; when ctx expires, the lnav subprocess is killed.
+// A DeadlineExceeded ctx error is treated as a normal bounded-follow completion.
+func (r Runner) RunCtx(ctx context.Context, args []string) error {
+	if r.Binary == "" {
+		r.Binary = "lnav"
+	}
+	if r.Stdout == nil {
+		r.Stdout = os.Stdout
+	}
+	if r.Stderr == nil {
+		r.Stderr = os.Stderr
+	}
+	if r.DryRun {
+		fmt.Fprintln(r.Stdout, prettyArgv(r.Binary, args))
+		return nil
+	}
+	if _, err := exec.LookPath(r.Binary); err != nil {
+		return output.Errorf("lnav_not_found", "lnav executable %q not found on PATH", r.Binary).
+			WithHint("run: lnav-cli setup, or install manually (brew install lnav)")
+	}
+	cmd := exec.CommandContext(ctx, r.Binary, args...)
+	cmd.Stdin = r.Stdin
+	cmd.Stdout = r.Stdout
+	cmd.Stderr = r.Stderr
+	err := cmd.Run()
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return nil
+	}
+	if err != nil {
 		return output.Errorf("lnav_exec_failed", "%v", err)
 	}
 	return nil

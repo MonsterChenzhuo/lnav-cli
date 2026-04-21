@@ -54,6 +54,30 @@ func BuildSQLArgs(o SQLOpts) []string {
 	return args
 }
 
+type TailOpts struct {
+	Pattern string
+	Level   string
+	Files   []string
+}
+
+// BuildTailArgs produces argv for bounded follow; :goto 0 forces a single pass so
+// lnav emits existing matches, and caller is expected to add -c :goto or rely on
+// write-json-to streaming + context timeout.
+func BuildTailArgs(o TailOpts) []string {
+	assertNoNewline(o.Pattern, "pattern")
+	assertNoNewline(o.Level, "level")
+	args := []string{"-n"}
+	if o.Pattern != "" {
+		args = append(args, "-c", ":filter-in "+o.Pattern)
+	}
+	if o.Level != "" {
+		args = append(args, "-c", ":set-min-log-level "+o.Level)
+	}
+	args = append(args, "-c", ":write-json-to -", "-c", ":goto 0", "--")
+	args = append(args, o.Files...)
+	return args
+}
+
 // BuildSummaryQueries returns the three SQL queries used by +summary:
 // level distribution, top-N error bodies, and a time histogram.
 func BuildSummaryQueries(topN int, histogramBucket string) []string {

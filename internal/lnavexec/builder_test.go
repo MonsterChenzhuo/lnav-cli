@@ -61,6 +61,22 @@ func TestBuildSQLArgs_RejectsNewline(t *testing.T) {
 	_ = BuildSQLArgs(SQLOpts{Query: "SELECT\n1", Files: []string{"/tmp/a.log"}})
 }
 
+func TestBuildTailArgs(t *testing.T) {
+	got := BuildTailArgs(TailOpts{Pattern: "5\\d\\d", Level: "error", Files: []string{"/tmp/a.log"}})
+	want := []string{
+		"-n",
+		"-c", ":filter-in 5\\d\\d",
+		"-c", ":set-min-log-level error",
+		"-c", ":write-json-to -",
+		"-c", ":goto 0",
+		"--",
+		"/tmp/a.log",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got=%v\nwant=%v", got, want)
+	}
+}
+
 func TestBuildSummaryQueries_Shape(t *testing.T) {
 	qs := BuildSummaryQueries(10, "1m")
 	if len(qs) != 3 {
