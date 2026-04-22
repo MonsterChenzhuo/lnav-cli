@@ -1,0 +1,155 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+
+# Serialize releases so concurrent pushes don't collide on tag creation.
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  VERSION: v1.0.${{ github.run_number }}
+  GO_VERSION: "1.25.0"
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - name: gofmt
+        run: |
+          diff=$(gofmt -l .)
+          if [ -n "$diff" ]; then
+            echo "gofmt changes needed in:"
+            echo "$diff"
+            exit 1
+          fi
+      - name: go vet
+        run: go vet ./...
+      - name: unit tests
+        run: go test -race -count=1 ./internal/... ./cmd/...
+      - name: e2e dry-run
+        run: go test -race -count=1 ./tests/e2e/dryrun/...
+      - name: skills-check
+        run: bash scripts/skills-check.sh
+
+  build:
+    name: build-${{ matrix.goos }}-${{ matrix.goarch }}
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { goos: linux,   goarch: amd64 }
+          - { goos: linux,   goarch: arm64 }
+          - { goos: darwin,  goarch: amd64 }
+          - { goos: darwin,  goarch: arm64 }
+          - { goos: windows, goarch: amd64, ext: ".exe" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: build binary + archive
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          set -euo pipefail
+          pkg="lnav-cli-${GOOS}-${GOARCH}"
+          bin="lnav-cli${{ matrix.ext }}"
+          mkdir -p "dist/${pkg}"
+          go build -trimpath -ldflags "-s -w" -o "dist/${pkg}/${bin}" .
+          cp README.md README.zh.md LICENSE "dist/${pkg}/"
+          cp -r skills "dist/${pkg}/"
+          cd dist
+          if [ "${GOOS}" = "windows" ]; then
+            zip -r "${pkg}.zip" "${pkg}"
+          else
+            tar -czf "${pkg}.tar.gz" "${pkg}"
+          fi
+          ls -la
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lnav-cli-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            dist/lnav-cli-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+            dist/lnav-cli-${{ matrix.goos }}-${{ matrix.goarch }}.zip
+          if-no-files-found: ignore
+          retention-days: 7
+
+  release:
+    name: tag + release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: checksums
+        run: |
+          cd dist
+          sha256sum *.tar.gz *.zip > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: release notes
+        run: |
+          set -euo pipefail
+          prev=$(git tag --list 'v*' --sort=-creatordate | head -n1 || true)
+          {
+            echo "## ${VERSION}"
+            echo
+            echo "Auto-published from \`main\` at \`${GITHUB_SHA::7}\`."
+            echo
+            echo "### Changes"
+            if [ -n "$prev" ]; then
+              git log --pretty='- %s (%h)' "${prev}..HEAD"
+            else
+              git log --pretty='- %s (%h)' HEAD
+            fi
+            echo
+            echo "### Artifacts"
+            echo "| Platform | File |"
+            echo "|----------|------|"
+            echo "| linux amd64   | \`lnav-cli-linux-amd64.tar.gz\` |"
+            echo "| linux arm64   | \`lnav-cli-linux-arm64.tar.gz\` |"
+            echo "| darwin amd64  | \`lnav-cli-darwin-amd64.tar.gz\` |"
+            echo "| darwin arm64  | \`lnav-cli-darwin-arm64.tar.gz\` |"
+            echo "| windows amd64 | \`lnav-cli-windows-amd64.zip\` |"
+            echo
+            echo "Verify: \`sha256sum -c SHA256SUMS\`."
+          } > release-notes.md
+          cat release-notes.md
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: ${{ env.VERSION }}
+          body_path: release-notes.md
+          target_commitish: ${{ github.sha }}
+          make_latest: "true"
+          files: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/SHA256SUMS
