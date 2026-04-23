@@ -1,21 +1,22 @@
 # AGENTS.md
 
-## Pre-PR Checklist
+This file exists for AI coding tools that look for `AGENTS.md` by convention
+(OpenAI Codex, Gemini CLI, etc.). The authoritative pre-PR checklist,
+conventions, and source-layout reference for this repo live in
+[CLAUDE.md](./CLAUDE.md) — read that first.
 
-1. `make unit-test`
-2. `go vet ./...`
-3. `gofmt -l .` — must produce no output
-4. `go mod tidy` — must not change `go.mod`/`go.sum`
-5. `make skills-check`
-6. `make e2e-dryrun`
+## TL;DR for agents in a hurry
 
-## Conventions
+1. Run `make test && make lint` before opening a PR.
+2. `stdout = data`, `stderr = errors`. Errors must be `*output.Err` with a
+   stable snake_case `code` and a `hint`.
+3. All lnav argv goes through `internal/lnavexec`. No shell. Newline-injected
+   input panics — that's intentional.
+4. Every new shortcut needs a matching dry-run E2E under `tests/e2e/dryrun/`
+   pinning the expected lnav argv.
+5. Follow-style commands must refuse to run without `--duration` or
+   `--max-events` (see `cmd/tail.go`).
+6. Conventional Commits: `feat(cmd): …`, `fix(lnavexec): …`, `docs(skill): …`.
 
-- `stdout = data`, `stderr = logs/errors`.
-- All errors returned from `RunE` must be `*output.Err`, never bare `fmt.Errorf`.
-- All filesystem paths received from CLI flags must be validated before use.
-- Every shortcut requires at least one dry-run E2E test asserting the generated `lnav` argv.
-
-## Commit Style
-
-Conventional Commits (English): `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`, `ci:`.
+For the full version — source layout table, code conventions, shortcut
+checklist, common traps — open [CLAUDE.md](./CLAUDE.md).

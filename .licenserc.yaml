@@ -1,0 +1,15 @@
+header:
+  license:
+    content: |
+      Copyright (c) [year] lnav-cli authors
+      SPDX-License-Identifier: MIT
+    copyright-year: "2026"
+
+  paths:
+    - '**/*.go'
+
+  paths-ignore:
+    - '**/testdata/**'
+    - 'tests/fixtures/**'
+
+  comment: on-failure

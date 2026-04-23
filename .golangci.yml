@@ -1,0 +1,64 @@
+# Copyright (c) 2026 lnav-cli authors
+# SPDX-License-Identifier: MIT
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: none
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - copyloopvar
+    - durationcheck
+    - fatcontext
+    - gocheckcompilerdirectives
+    - gocritic
+    - gomoddirectives
+    - goprintffuncname
+    - govet
+    - ineffassign
+    - misspell
+    - nolintlint
+    - nosprintfhostport
+    - reassign
+    - unconvert
+    - unused
+
+    # To enable later after fixing existing issues:
+    # - errcheck      # 30 unchecked fmt.Fprintf/Fprintln across cmd/ + runner
+    # - errname       # `output.Err` violates the XxxError convention
+    # - errorlint     # pairs with errcheck; tighten once errcheck is clean
+    # - nilerr        # doctor.go intentionally returns nil on lnav-missing
+    # - gosec         # exec/filepath usage needs per-call review first
+    # - staticcheck   # broad; enable after the three above are clean
+
+  exclusions:
+    rules:
+      - path: _test\.go$
+        linters:
+          - bodyclose
+          - gocritic
+
+  settings:
+    gocritic:
+      disabled-checks:
+        - appendAssign
+        - hugeParam
+      disabled-tags:
+        - style
+    govet:
+      enable:
+        - httpresponse
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

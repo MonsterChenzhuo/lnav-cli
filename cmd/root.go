@@ -6,6 +6,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+
+	"github.com/MonsterChenzhuo/lnav-cli/internal/build"
 )
 
 type GlobalOpts struct {
@@ -24,6 +26,7 @@ func NewRootCmd() *cobra.Command {
 		Use:           "lnav-cli",
 		Short:         "Agent-friendly wrapper around lnav",
 		Long:          "lnav-cli — drive lnav from Claude Code with one-line commands.",
+		Version:       build.Version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
@@ -41,6 +44,7 @@ func NewRootCmd() *cobra.Command {
 	root.AddCommand(newSummaryCmd())
 	root.AddCommand(newTailCmd())
 	root.AddCommand(newSetupCmd())
+	root.AddCommand(newVersionCmd())
 	return root
 }
 
